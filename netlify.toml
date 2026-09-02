@@ -1,9 +1,9 @@
 [build]
   publish = "public"
-  command = ""
+  command = "echo 'Static site build complete'"
 
 [build.environment]
-  NODE_VERSION = "20.x"
+  NODE_VERSION = "20"
 
 # Redirect /api requests to backend URL if specified
 [[redirects]]
