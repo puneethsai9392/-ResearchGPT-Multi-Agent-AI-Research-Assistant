@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResearchGPT — Multi-Agent AI Research Assistant</title>
+  <meta name="description" content="Autonomous multi-agent AI research assistant built with LangGraph, RAG, ChromaDB & FastAPI. Deployable on Netlify.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <div class="brand-text">
+          <h1>ResearchGPT <span class="badge-tag">v1.0</span></h1>
+          <p>Multi-Agent AI Research Platform</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div id="backend-status" class="status-pill status-connecting" onclick="openConfigModal()">
+          <span class="status-dot"></span>
+          <span id="status-text">Checking Backend...</span>
+        </div>
+        <button class="btn btn-secondary btn-icon" onclick="openConfigModal()" title="API Settings">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="main-layout">
+      
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-tab="tab-research" onclick="switchTab('tab-research')">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+            <span>Research Console</span>
+          </button>
+
+          <button class="nav-item" data-tab="tab-knowledge" onclick="switchTab('tab-knowledge')">
+            <i class="fa-solid fa-database"></i>
+            <span>Knowledge Store</span>
+            <span class="badge-count" id="vector-chunk-badge">0</span>
+          </button>
+
+          <button class="nav-item" data-tab="tab-history" onclick="switchTab('tab-history')">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Session History</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="info-card">
+            <div class="info-card-header">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Netlify Ready
+            </div>
+            <p>Static UI hosted on Netlify. Connects to FastAPI Engine.</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <main class="workspace">
+
+        <!-- TAB 1: Research Console -->
+        <section id="tab-research" class="tab-content active">
+          
+          <!-- Query Input Card -->
+          <div class="card search-card">
+            <h2><i class="fa-solid fa-sparkles"></i> Initiate Research Task</h2>
+            <p class="subtitle">Enter any complex topic. Multi-agent system will plan, search the web, query vector store, audit facts, and synthesize report.</p>
+
+            <form id="research-form" onsubmit="handleResearchSubmit(event)">
+              <div class="input-group">
+                <textarea 
+                  id="query-input" 
+                  placeholder="e.g. Compare Retrieval-Augmented Generation (RAG) vs Fine-Tuning for Enterprise LLMs..." 
+                  rows="3" 
+                  required
+                ></textarea>
+                <button type="submit" id="submit-btn" class="btn btn-primary btn-glow">
+                  <i class="fa-solid fa-paper-plane"></i> Launch Research
+                </button>
+              </div>
+            </form>
+
+            <div class="quick-prompts">
+              <span>Quick Topics:</span>
+              <button class="chip" onclick="setQuery('Explain Retrieval-Augmented Generation (RAG) architecture and benefits')">RAG Architecture</button>
+              <button class="chip" onclick="setQuery('Compare Quantum Computing vs Classical Computing security implications')">Quantum vs Classical</button>
+              <button class="chip" onclick="setQuery('Overview of autonomous AI agents in software engineering in 2026')">AI Engineering Agents</button>
+            </div>
+          </div>
+
+          <!-- Progress Visualizer (Hidden initially) -->
+          <div id="progress-container" class="card progress-card hidden">
+            <div class="progress-header">
+              <h3><i class="fa-solid fa-rotate spin"></i> Multi-Agent Execution Pipeline</h3>
+              <span id="progress-status-badge" class="badge">Running</span>
+            </div>
+
+            <!-- Agent Stepper -->
+            <div class="agent-stepper">
+              <div class="step-item" id="step-planner">
+                <div class="step-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                <div class="step-label">Planner</div>
+              </div>
+              <div class="step-line"></div>
+              <div class="step-item" id="step-search">
+                <div class="step-icon"><i class="fa-solid fa-globe"></i></div>
+                <div class="step-label">Web & RAG</div>
+              </div>
+              <div class="step-line"></div>
+              <div class="step-item" id="step-aggregator">
+                <div class="step-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="step-label">Aggregator</div>
+              </div>
+              <div class="step-line"></div>
+              <div class="step-item" id="step-critic">
+                <div class="step-icon"><i class="fa-solid fa-user-check"></i></div>
+                <div class="step-label">Critic Audit</div>
+              </div>
+              <div class="step-line"></div>
+              <div class="step-item" id="step-writer">
+                <div class="step-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                <div class="step-label">Writer</div>
+              </div>
+            </div>
+
+            <!-- Live Agent Logs Console -->
+            <div class="log-console" id="log-console">
+              <div class="log-entry system"><i class="fa-solid fa-terminal"></i> Initializing LangGraph workflow state...</div>
+            </div>
+          </div>
+
+          <!-- Research Report Output -->
+          <div id="report-container" class="card report-card hidden">
+            <div class="report-header">
+              <div class="report-title-group">
+                <i class="fa-solid fa-file-contract"></i>
+                <div>
+                  <h2 id="report-query-title">Research Report</h2>
+                  <span id="report-meta" class="report-meta">Session ID: -</span>
+                </div>
+              </div>
+              <div class="report-actions">
+                <button class="btn btn-secondary btn-sm" onclick="copyReport()"><i class="fa-solid fa-copy"></i> Copy</button>
+                <button class="btn btn-secondary btn-sm" onclick="downloadReport()"><i class="fa-solid fa-download"></i> Download</button>
+              </div>
+            </div>
+
+            <!-- Critic Audit Banner -->
+            <div id="critic-banner" class="critic-banner hidden">
+              <div class="critic-badge"><i class="fa-solid fa-shield-halved"></i> Fact Verification Audit</div>
+              <div id="critic-details">Passed high factual accuracy checks.</div>
+            </div>
+
+            <hr class="divider">
+
+            <!-- Rendered Markdown Body -->
+            <div id="report-body" class="markdown-body"></div>
+
+            <!-- Feedback Component -->
+            <div class="feedback-footer">
+              <span>Rate this research synthesis:</span>
+              <div class="star-rating">
+                <i class="fa-regular fa-star" data-rating="1" onclick="rateSession(1)"></i>
+                <i class="fa-regular fa-star" data-rating="2" onclick="rateSession(2)"></i>
+                <i class="fa-regular fa-star" data-rating="3" onclick="rateSession(3)"></i>
+                <i class="fa-regular fa-star" data-rating="4" onclick="rateSession(4)"></i>
+                <i class="fa-regular fa-star" data-rating="5" onclick="rateSession(5)"></i>
+              </div>
+              <span id="feedback-msg" class="feedback-msg"></span>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- TAB 2: Knowledge Store -->
+        <section id="tab-knowledge" class="tab-content">
+          <div class="card">
+            <h2><i class="fa-solid fa-folder-open"></i> Vector Store Document Upload</h2>
+            <p class="subtitle">Upload PDF, DOCX, or TXT documents to ingest into ChromaDB for hybrid RAG search.</p>
+
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)">
+              <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt" onchange="uploadSelectedFile(event)">
+              <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <h3>Drag & drop files here, or click to browse</h3>
+              <p>Supports .pdf, .docx, .txt (Max 25MB)</p>
+            </div>
+
+            <div id="upload-status" class="upload-status hidden"></div>
+
+            <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Indexed Vector Sources</h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Source Document</th>
+                    <th>Status</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody id="sources-table-body">
+                  <tr>
+                    <td colspan="3" class="text-center text-muted">Loading vector sources...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: History -->
+        <section id="tab-history" class="tab-content">
+          <div class="card">
+            <div class="card-header-flex">
+              <div>
+                <h2><i class="fa-solid fa-history"></i> Research Session History</h2>
+                <p class="subtitle">View past research queries, execution logs, and generated reports.</p>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="clearAllHistory()"><i class="fa-solid fa-trash"></i> Clear History</button>
+            </div>
+
+            <div id="history-list" class="history-list">
+              <div class="text-center text-muted pad-v">Loading session history...</div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- API Settings Modal -->
+  <div id="config-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-sliders"></i> Backend Connection Setup</h3>
+        <button class="close-btn" onclick="closeConfigModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Since Netlify hosts static frontends, enter your deployed FastAPI Backend endpoint URL (e.g. Render, Railway, or Localhost):</p>
+        <div class="form-group">
+          <label for="api-url-input">FastAPI Backend API Base URL:</label>
+          <input type="url" id="api-url-input" placeholder="http://localhost:8000" class="input-control">
+          <small>Leave empty to auto-detect backend on port 8000 or relative endpoint.</small>
+        </div>
+        <div id="modal-ping-result" class="ping-result"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
+        <button class="btn btn-primary" onclick="saveConfigModal()">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- JS App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
