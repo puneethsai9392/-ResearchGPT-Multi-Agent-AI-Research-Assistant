@@ -1,0 +1,28 @@
+[build]
+  publish = "public"
+  command = ""
+
+[build.environment]
+  NODE_VERSION = "20.x"
+
+# Redirect /api requests to backend URL if specified
+[[redirects]]
+  from = "/api/*"
+  to = ":splat"
+  status = 200
+
+# Handle SPA fallback routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# HTTP Security & Performance Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Access-Control-Allow-Origin = "*"
